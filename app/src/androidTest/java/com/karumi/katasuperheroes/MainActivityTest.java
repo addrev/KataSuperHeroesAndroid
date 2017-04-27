@@ -17,14 +17,19 @@
 package com.karumi.katasuperheroes;
 
 import android.support.test.InstrumentationRegistry;
+import android.support.test.espresso.NoMatchingViewException;
 import android.support.test.espresso.intent.rule.IntentsTestRule;
+import android.support.test.espresso.matcher.ViewMatchers.Visibility;
 import android.support.test.runner.AndroidJUnit4;
 import android.test.suitebuilder.annotation.LargeTest;
+import android.view.View;
 
 import com.karumi.katasuperheroes.di.MainComponent;
 import com.karumi.katasuperheroes.di.MainModule;
 import com.karumi.katasuperheroes.model.SuperHero;
 import com.karumi.katasuperheroes.model.SuperHeroesRepository;
+import com.karumi.katasuperheroes.recyclerview.RecyclerViewInteraction;
+import com.karumi.katasuperheroes.recyclerview.RecyclerViewInteraction.ItemViewAssertion;
 import com.karumi.katasuperheroes.ui.view.MainActivity;
 
 import org.junit.Rule;
@@ -38,10 +43,15 @@ import java.util.List;
 
 import it.cosenonjaviste.daggermock.DaggerMockRule;
 
+import static android.R.id.list;
 import static android.support.test.espresso.Espresso.onView;
 import static android.support.test.espresso.assertion.ViewAssertions.matches;
+import static android.support.test.espresso.matcher.ViewMatchers.hasDescendant;
 import static android.support.test.espresso.matcher.ViewMatchers.isDisplayed;
+import static android.support.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
+import static android.support.test.espresso.matcher.ViewMatchers.withId;
 import static android.support.test.espresso.matcher.ViewMatchers.withText;
+import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.not;
 import static org.mockito.Mockito.when;
 
@@ -89,14 +99,56 @@ public class MainActivityTest {
         onView(withText(EMTPY_CASE_STRING)).check(matches(not(isDisplayed())));
     }
 
+
     @Test
-    public void showsSuperHeroNameIfThereIsOneSuperHero() throws Exception {
-        givenThereAreSomeSuperHeroes(1);
+    public void doesNotShowProgressBarIfThereAreSomeSuperHeroes() throws Exception {
+        givenThereAreSomeSuperHeroes(10);
 
         startActivity();
 
-        onView(withText("Hero0")).check(matches(isDisplayed()));
+        onView(withId(R.id.progress_bar)).check(matches(not(isDisplayed())));
     }
+
+    @Test
+    public void showsSuperHeroNameIfThereIsOneSuperHero() throws Exception {
+        List<SuperHero> heroesList = givenThereAreSomeSuperHeroes(1);
+
+        startActivity();
+
+        onView(withText(heroesList.get(0).getName())).check(matches(isDisplayed()));
+    }
+
+    @Test
+    public void showsManySuperHeroesWhenThereAreManySuperheros() throws Exception {
+        List<SuperHero> heroesList = givenThereAreSomeSuperHeroes(10);
+
+        startActivity();
+
+        RecyclerViewInteraction.<SuperHero>onRecyclerView((withId(R.id.recycler_view))).withItems(heroesList).check(new ItemViewAssertion<SuperHero>() {
+            @Override
+            public void check(SuperHero item, View view, NoMatchingViewException e) {
+                matches(hasDescendant(withText(item.getName()))).check(view,e);
+            }
+        });
+    }
+
+
+    @Test
+    public void showsAvengersBadge() throws Exception {
+        List<SuperHero> heroesList = givenThereAreSomeSuperHeroes(1);
+
+        startActivity();
+
+        RecyclerViewInteraction.<SuperHero>onRecyclerView((withId(R.id.recycler_view))).withItems(heroesList).check(new ItemViewAssertion<SuperHero>() {
+            @Override
+            public void check(SuperHero item, View view, NoMatchingViewException e) {
+                matches(hasDescendant(allOf(withId(R.id.iv_avengers_badge),withEffectiveVisibility(
+                        item.isAvenger()?Visibility.VISIBLE:Visibility.GONE)))).check(view,e);
+            }
+        });
+    }
+
+
 
     private void givenThereAreNoSuperHeroes() {
         when(repository.getAll()).thenReturn(Collections.<SuperHero>emptyList());
