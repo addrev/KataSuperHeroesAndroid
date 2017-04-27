@@ -30,6 +30,7 @@ import com.karumi.katasuperheroes.di.MainComponent;
 import com.karumi.katasuperheroes.di.MainModule;
 import com.karumi.katasuperheroes.model.SuperHero;
 import com.karumi.katasuperheroes.model.SuperHeroesRepository;
+import com.karumi.katasuperheroes.model.error.HeroNotFoundException;
 import com.karumi.katasuperheroes.recyclerview.RecyclerViewInteraction;
 import com.karumi.katasuperheroes.recyclerview.RecyclerViewInteraction.ItemViewAssertion;
 import com.karumi.katasuperheroes.ui.view.MainActivity;
@@ -195,7 +196,11 @@ public class MainActivityTest {
         for (int i = 0; i < number; i++) {
             SuperHero hero = new SuperHero("Hero" + i, "http://www.photo.com/" + i, i % 2 == 0, "Hero" + i + " description");
             superHeroList.add(hero);
-            when(repository.getByName(hero.getName())).thenReturn(hero);
+            try {
+                when(repository.getByName(hero.getName())).thenReturn(hero);
+            } catch (HeroNotFoundException e) {
+                e.printStackTrace();
+            }
         }
         when(repository.getAll()).thenReturn(superHeroList);
         return superHeroList;

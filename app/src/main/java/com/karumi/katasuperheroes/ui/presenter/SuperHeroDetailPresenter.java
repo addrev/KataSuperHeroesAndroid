@@ -17,6 +17,7 @@
 package com.karumi.katasuperheroes.ui.presenter;
 
 import com.karumi.katasuperheroes.model.SuperHero;
+import com.karumi.katasuperheroes.model.error.HeroLoadError;
 import com.karumi.katasuperheroes.usecase.GetSuperHeroByName;
 import javax.inject.Inject;
 
@@ -42,11 +43,20 @@ public class SuperHeroDetailPresenter extends Presenter<SuperHeroDetailPresenter
         view.hideLoading();
         view.showSuperHero(superHero);
       }
+
+      @Override
+      public void onSuperHeroLoadFailed(HeroLoadError error) {
+        View view=getView();
+        view.hideLoading();
+        view.showNotFoundError();
+      }
     });
   }
 
   public interface View extends Presenter.View {
 
     void showSuperHero(SuperHero superHero);
+
+    void showNotFoundError();
   }
 }
