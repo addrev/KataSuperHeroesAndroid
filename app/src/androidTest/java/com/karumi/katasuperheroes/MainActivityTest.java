@@ -18,6 +18,8 @@ package com.karumi.katasuperheroes;
 
 import android.support.test.InstrumentationRegistry;
 import android.support.test.espresso.NoMatchingViewException;
+import android.support.test.espresso.contrib.RecyclerViewActions;
+import android.support.test.espresso.intent.Intents;
 import android.support.test.espresso.intent.rule.IntentsTestRule;
 import android.support.test.espresso.matcher.ViewMatchers.Visibility;
 import android.support.test.runner.AndroidJUnit4;
@@ -31,6 +33,7 @@ import com.karumi.katasuperheroes.model.SuperHeroesRepository;
 import com.karumi.katasuperheroes.recyclerview.RecyclerViewInteraction;
 import com.karumi.katasuperheroes.recyclerview.RecyclerViewInteraction.ItemViewAssertion;
 import com.karumi.katasuperheroes.ui.view.MainActivity;
+import com.karumi.katasuperheroes.ui.view.SuperHeroDetailActivity;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,12 +48,17 @@ import it.cosenonjaviste.daggermock.DaggerMockRule;
 
 import static android.R.id.list;
 import static android.support.test.espresso.Espresso.onView;
+import static android.support.test.espresso.action.ViewActions.click;
 import static android.support.test.espresso.assertion.ViewAssertions.matches;
+import static android.support.test.espresso.intent.Intents.intended;
+import static android.support.test.espresso.intent.matcher.IntentMatchers.hasComponent;
+import static android.support.test.espresso.intent.matcher.IntentMatchers.hasExtra;
 import static android.support.test.espresso.matcher.ViewMatchers.hasDescendant;
 import static android.support.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static android.support.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
 import static android.support.test.espresso.matcher.ViewMatchers.withId;
 import static android.support.test.espresso.matcher.ViewMatchers.withText;
+import static com.karumi.katasuperheroes.matchers.RecyclerViewItemsCountMatcher.recyclerViewHasItemCount;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.not;
 import static org.mockito.Mockito.when;
@@ -99,6 +107,34 @@ public class MainActivityTest {
         onView(withText(EMTPY_CASE_STRING)).check(matches(not(isDisplayed())));
     }
 
+
+    @Test
+    public void openASuperHeroDetailWhenARowIsTapped() throws Exception {
+        List<SuperHero> heroesList = givenThereAreSomeSuperHeroes(10);
+
+        startActivity();
+
+        int superHeroIndex=0;
+
+        onView(withId(R.id.recycler_view)).
+                perform(RecyclerViewActions.actionOnItemAtPosition(superHeroIndex, click()));
+
+        SuperHero selectedSuperHero = heroesList.get(0);
+        intended(hasComponent(SuperHeroDetailActivity.class.getCanonicalName()));
+        intended(hasExtra("super_hero_name_key",selectedSuperHero.getName()));
+
+    }
+
+    @Test
+    public void showsTheCorrectNumberOfSuperHeroes() throws Exception {
+        givenThereAreSomeSuperHeroes(15);
+
+        startActivity();
+
+
+        onView(withId(R.id.recycler_view)).check(
+                matches(recyclerViewHasItemCount(15)));
+    }
 
     @Test
     public void doesNotShowProgressBarIfThereAreSomeSuperHeroes() throws Exception {
@@ -159,6 +195,7 @@ public class MainActivityTest {
         for (int i = 0; i < number; i++) {
             SuperHero hero = new SuperHero("Hero" + i, "http://www.photo.com/" + i, i % 2 == 0, "Hero" + i + " description");
             superHeroList.add(hero);
+            when(repository.getByName(hero.getName())).thenReturn(hero);
         }
         when(repository.getAll()).thenReturn(superHeroList);
         return superHeroList;
